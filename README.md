@@ -2,6 +2,11 @@
 
 CLI para emissão de NFS-e pelo Sistema Nacional (Sefin Nacional / ADN), com assinatura do DPS via certificado digital A1 (.pfx) e geração de DANFSe em PDF.
 
+Muito útil pra quando o site do GOV tenta complicar sua vida sendo lento ou dando problema. Também é útil pra você poder só replicar uma nota fiscal anterior e (opcionalmente) só alterar o valor.
+
+> [!CAUTION]
+> Esse código foi gerado pelo Claude Oppus/Sonnet. Use por sua conta e risco. Não me responsabilizo por complicações decorrentes de bugs.
+
 ## Instalação
 
 > Pressupõe que o Python 3 já esteja instalado. Caso não esteja, veja as instruções de instalação em [python.org/downloads](https://www.python.org/downloads/).
