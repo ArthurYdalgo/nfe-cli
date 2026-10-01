@@ -18,7 +18,7 @@ Na primeira execução, se não existir um `config.json`, o programa cria o arqu
 Para o CNPJ/CPF, se houver exatamente um arquivo `.pfx` na pasta do projeto, o programa usa esse certificado automaticamente: pede a senha dele e extrai o CNPJ/CPF do próprio certificado, em vez de perguntar o documento manualmente. Se não quiser esse comportamento (por exemplo, para digitar o documento manualmente mesmo havendo um `.pfx` na pasta), use a flag `--dont-use-pfx-file`:
 
 ```bash
-python3 emitir.py --dont-use-pfx-file
+python3 main.py --dont-use-pfx-file
 ```
 
 Para o código IBGE do município, o programa tenta preencher o campo automaticamente, nesta ordem, e sempre deixa o valor sugerido pré-preenchido (você pode aceitar com Enter ou digitar outro):
@@ -41,7 +41,7 @@ O emissor assina a DPS usando um certificado digital A1 no formato `.pfx` (ou `.
 
 Há duas formas de indicar qual certificado usar:
 
-1. **Automático** — coloque o arquivo `.pfx` na pasta do projeto (mesmo diretório do `emitir.py`) e deixe o campo `"certificado"` vazio (`""`) no `config.json`. Ao rodar, o programa procura automaticamente por um `.pfx` na pasta e o utiliza.
+1. **Automático** — coloque o arquivo `.pfx` na pasta do projeto (mesmo diretório do `main.py`) e deixe o campo `"certificado"` vazio (`""`) no `config.json`. Ao rodar, o programa procura automaticamente por um `.pfx` na pasta e o utiliza.
    - Se não encontrar nenhum `.pfx`, o programa para com um erro pedindo para configurar o caminho.
    - Se encontrar **mais de um** `.pfx` na pasta, o programa também para e pede para você especificar explicitamente qual usar (via `certificado` no config), já que não há como adivinhar o certificado correto.
 
@@ -74,7 +74,7 @@ chmod 600 config.json
 É possível pré-preencher os dados de emissão a partir de um XML de NFS-e ou DPS já existente, usando a flag `--importar`:
 
 ```bash
-python3 emitir.py --importar caminho/para/nota.xml
+python3 main.py --importar caminho/para/nota.xml
 ```
 
 Isso extrai os dados do tomador, serviço e valores do XML informado e os usa como base para a nova emissão (equivalente a "replicar" essa nota), sem precisar redigitar tudo manualmente.
@@ -100,28 +100,28 @@ Se preferir preencher tudo do zero, escolha `n`.
 
 ```bash
 # emitir uma nova NFS-e (modo interativo)
-python3 emitir.py
+python3 main.py
 
 # emitir em produção em vez de homologação (padrão do config.json)
-python3 emitir.py --ambiente producao
+python3 main.py --ambiente producao
 
 # gerar e assinar o XML sem enviar (teste)
-python3 emitir.py --dry-run
+python3 main.py --dry-run
 
 # importar dados de um XML existente
-python3 emitir.py --importar nota-anterior.xml
+python3 main.py --importar nota-anterior.xml
 
 # gerar o PDF (DANFSe) de uma NFS-e já emitida
-python3 emitir.py --pdf
+python3 main.py --pdf
 
 # gerar o PDF de uma chave de acesso específica
-python3 emitir.py --pdf 41277002245263801000188000000000001626090973474823
+python3 main.py --pdf 41277002245263801000188000000000001626090973474823
 
 # não gerar o PDF automaticamente após emitir
-python3 emitir.py --sem-danfse
+python3 main.py --sem-danfse
 
 # usar um arquivo de config alternativo
-python3 emitir.py --config outro-config.json
+python3 main.py --config outro-config.json
 ```
 
 ## Estrutura de dados local
