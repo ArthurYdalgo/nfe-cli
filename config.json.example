@@ -1,6 +1,6 @@
 {
   "ambiente": "homologacao",
-  "certificado": "certificado.pfx",
+  "certificado": "",
   "senha_certificado": "",
   "serie": 1,
   "prestador": {

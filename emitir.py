@@ -605,13 +605,27 @@ def abrir_sessao(cert):
         yield session
 
 
+def localizar_certificado(cfg):
+    valor = cfg.get("certificado")
+    if valor:
+        cert_path = Path(valor)
+        return cert_path if cert_path.is_absolute() else BASE_DIR / cert_path
+    encontrados = sorted(BASE_DIR.glob("*.pfx"))
+    if not encontrados:
+        raise SystemExit("Nenhum certificado .pfx encontrado na pasta e 'certificado' não foi definido no config.json.")
+    if len(encontrados) > 1:
+        nomes = ", ".join(p.name for p in encontrados)
+        raise SystemExit(f"Mais de um .pfx encontrado na pasta ({nomes}). Defina 'certificado' no config.json com o caminho desejado.")
+    return encontrados[0]
+
+
 def abrir_certificado(cfg, config_path):
     senha = cfg.get("senha_certificado") or os.environ.get("NFSE_CERT_SENHA")
     if cfg.get("senha_certificado") and os.name == "posix" and config_path.stat().st_mode & 0o077:
         print(f"Aviso: {config_path} contém a senha e é legível por outros usuários. Rode: chmod 600 {config_path}", file=sys.stderr)
     senha = senha or getpass.getpass("Senha do certificado: ")
-    cert_path = Path(cfg["certificado"])
-    cert = Certificado(cert_path if cert_path.is_absolute() else BASE_DIR / cert_path, senha)
+    cert_path = localizar_certificado(cfg)
+    cert = Certificado(cert_path, senha)
     print(f"Certificado: {cert.cert.subject.rfc4514_string()} | válido até {cert.cert.not_valid_after_utc:%d/%m/%Y}")
     return cert
 
@@ -702,9 +716,17 @@ def main():
     parser.add_argument("--pdf", nargs="?", const="", metavar="CHAVE", help="gera o DANFSe em PDF; sem CHAVE, lista as NFS-e locais")
     args = parser.parse_args()
 
-    cfg = ler_json(Path(args.config))
+    config_path = Path(args.config)
+    if not config_path.exists():
+        exemplo_path = BASE_DIR / "config.json.example"
+        if exemplo_path.exists():
+            config_path.write_bytes(exemplo_path.read_bytes())
+            raise SystemExit(f"Config não encontrada. Criei {config_path} a partir de config.json.example — preencha os dados do prestador e rode novamente.")
+        raise SystemExit(f"Config não encontrada: {config_path}")
+
+    cfg = ler_json(config_path)
     if not cfg:
-        raise SystemExit(f"Config não encontrada: {args.config}")
+        raise SystemExit(f"Config inválida: {config_path}")
     nome_ambiente = args.ambiente or cfg.get("ambiente", "homologacao")
     ambiente = AMBIENTES[nome_ambiente]
     pasta = BASE_DIR / "dados" / nome_ambiente
@@ -718,7 +740,7 @@ def main():
     if args.pdf is not None:
         return comando_pdf(args, cfg, ambiente, pasta)
 
-    cert = abrir_certificado(cfg, Path(args.config))
+    cert = abrir_certificado(cfg, config_path)
     print(f"Ambiente:    {nome_ambiente}")
     doc_cert = doc_do_certificado(cert)
     doc_cfg = limpar_doc(cfg["prestador"]["documento"])
