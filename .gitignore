@@ -1,0 +1,6 @@
+config.json
+dados
+__pycache__
+*.xml
+*.pfx
+*.pdf
