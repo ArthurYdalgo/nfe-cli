@@ -1,0 +1,32 @@
+{
+  "ambiente": "homologacao",
+  "certificado": "certificado.pfx",
+  "senha_certificado": "",
+  "serie": 1,
+  "prestador": {
+    "documento": "00000000000000",
+    "cod_municipio": "0000000",
+    "fone": "",
+    "email": "",
+    "op_simp_nac": 3,
+    "reg_ap_trib_sn": 1,
+    "reg_esp_trib": 0
+  },
+  "tot_trib": {
+    "pTotTribSN": "6.00"
+  },
+  "padroes": {
+    "servico": {
+      "c_trib_nac": "",
+      "c_trib_mun": "",
+      "c_nbs": "",
+      "descricao": ""
+    },
+    "valores": {
+      "trib_issqn": "1",
+      "tp_ret_issqn": "1",
+      "aliquota": ""
+    }
+  },
+  "ibscbs": null
+}
