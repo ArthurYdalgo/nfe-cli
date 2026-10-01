@@ -1,11 +1,35 @@
-# nfe-cli
+# NFe CLI
 
 CLI para emissão de NFS-e pelo Sistema Nacional (Sefin Nacional / ADN), com assinatura do DPS via certificado digital A1 (.pfx) e geração de DANFSe em PDF.
 
 ## Instalação
 
+> Pressupõe que o Python 3 já esteja instalado. Caso não esteja, veja as instruções de instalação em [python.org/downloads](https://www.python.org/downloads/).
+
 ```bash
 pip install -r requirements.txt
+```
+
+Na primeira execução, se não existir um `config.json`, o programa cria o arquivo automaticamente a partir de `config.json.example` e pergunta, ali mesmo no terminal:
+
+1. Se você quer usar o ambiente de produção em vez de homologação (padrão).
+2. O CNPJ/CPF e o código IBGE do município do prestador (campos obrigatórios).
+
+Para o CNPJ/CPF, se houver exatamente um arquivo `.pfx` na pasta do projeto, o programa usa esse certificado automaticamente: pede a senha dele e extrai o CNPJ/CPF do próprio certificado, em vez de perguntar o documento manualmente. Se não quiser esse comportamento (por exemplo, para digitar o documento manualmente mesmo havendo um `.pfx` na pasta), use a flag `--dont-use-pfx-file`:
+
+```bash
+python3 emitir.py --dont-use-pfx-file
+```
+
+Para o código IBGE do município, o programa tenta preencher o campo automaticamente, nesta ordem, e sempre deixa o valor sugerido pré-preenchido (você pode aceitar com Enter ou digitar outro):
+
+1. **NFS-e local mais recente** — se já existir algum XML emitido anteriormente em `dados/<ambiente>/xml/`, o código do município é reaproveitado dela.
+2. **BrasilAPI** (apenas para CNPJ) — consulta `https://brasilapi.com.br/api/cnpj/v1/<cnpj>` e usa o código de município cadastrado na Receita Federal para aquele CNPJ.
+3. Se nenhuma das opções acima funcionar (sem internet, CPF, ou API fora do ar), o campo fica em branco e precisa ser digitado manualmente.
+
+Com isso o `config.json` já fica pronto e a execução continua normalmente — não é preciso rodar o programa de novo. Os demais campos (certificado, senha, padrões de serviço etc.) ficam com os valores padrão do exemplo e podem ser ajustados depois editando `config.json`. Se preferir, você também pode copiar o arquivo manualmente antes de rodar:
+
+```bash
 cp config.json.example config.json
 ```
 

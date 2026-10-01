@@ -605,6 +605,31 @@ def abrir_sessao(cert):
         yield session
 
 
+def sugerir_cod_municipio(documento):
+    for pasta_amb in (BASE_DIR / "dados").glob("*"):
+        xmls = sorted((pasta_amb / "xml").glob("*.xml"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for xml_path in xmls:
+            try:
+                nf = extrair_dados(xml_path.read_bytes())
+            except (ValueError, etree.XMLSyntaxError):
+                continue
+            cod = nf["dados"]["servico"].get("cod_municipio_prestacao")
+            if cod:
+                return cod, f"da última NFS-e local ({xml_path.name})"
+
+    if documento and len(documento) == 14:
+        try:
+            resp = requests.get(f"https://brasilapi.com.br/api/cnpj/v1/{documento}", timeout=8)
+            resp.raise_for_status()
+            cod = str(ci(resp.json(), "codigo_municipio_ibge") or "")
+            if re.fullmatch(r"\d{7}", cod):
+                return cod, "via BrasilAPI (dados do CNPJ)"
+        except requests.RequestException:
+            pass
+
+    return "", ""
+
+
 def localizar_certificado(cfg):
     valor = cfg.get("certificado")
     if valor:
@@ -714,19 +739,39 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="gera e assina o XML sem enviar")
     parser.add_argument("--sem-danfse", action="store_true", help="não gera o PDF após emitir")
     parser.add_argument("--pdf", nargs="?", const="", metavar="CHAVE", help="gera o DANFSe em PDF; sem CHAVE, lista as NFS-e locais")
+    parser.add_argument("--dont-use-pfx-file", action="store_true", help="não detectar/usar automaticamente um .pfx da pasta ao criar o config.json")
     args = parser.parse_args()
 
     config_path = Path(args.config)
-    if not config_path.exists():
-        exemplo_path = BASE_DIR / "config.json.example"
-        if exemplo_path.exists():
-            config_path.write_bytes(exemplo_path.read_bytes())
-            raise SystemExit(f"Config não encontrada. Criei {config_path} a partir de config.json.example — preencha os dados do prestador e rode novamente.")
-        raise SystemExit(f"Config não encontrada: {config_path}")
-
     cfg = ler_json(config_path)
     if not cfg:
-        raise SystemExit(f"Config inválida: {config_path}")
+        exemplo_path = BASE_DIR / "config.json.example"
+        if not exemplo_path.exists():
+            raise SystemExit(f"Config não encontrada: {config_path}")
+        cfg = json.loads(exemplo_path.read_text(encoding="utf-8"))
+        print(f"Config não encontrada. Criando {config_path} a partir de config.json.example.")
+        if confirmar("Usar ambiente de produção em vez de homologação?", False):
+            cfg["ambiente"] = "producao"
+        print("Informe os dados do prestador (podem ser ajustados depois em config.json):")
+
+        doc_detectado = None
+        if not args.dont_use_pfx_file:
+            pfx_encontrados = sorted(BASE_DIR.glob("*.pfx"))
+            if len(pfx_encontrados) == 1:
+                print(f"Certificado encontrado: {pfx_encontrados[0].name}")
+                senha_pfx = getpass.getpass("Senha do certificado: ")
+                try:
+                    doc_detectado = doc_do_certificado(Certificado(pfx_encontrados[0], senha_pfx))
+                except (SystemExit, ValueError) as e:
+                    print(f"  não foi possível ler o certificado ({e}); informe o CNPJ/CPF manualmente.")
+
+        cfg["prestador"]["documento"] = doc_detectado or perguntar_regex("CNPJ/CPF do prestador", "", r"\d{11}|\d{14}")
+
+        municipio_sugerido, origem = sugerir_cod_municipio(cfg["prestador"]["documento"])
+        if municipio_sugerido:
+            print(f"  (sugestão obtida {origem}; pressione Enter para aceitar ou digite outro)")
+        cfg["prestador"]["cod_municipio"] = perguntar_regex("Código IBGE do município", municipio_sugerido, r"\d{7}")
+        gravar_json(config_path, cfg)
     nome_ambiente = args.ambiente or cfg.get("ambiente", "homologacao")
     ambiente = AMBIENTES[nome_ambiente]
     pasta = BASE_DIR / "dados" / nome_ambiente
